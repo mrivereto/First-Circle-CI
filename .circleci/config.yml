@@ -1,19 +1,28 @@
 version: 2.1
 
 jobs:
-  create_infrastructure:
+  configure_infrastructure:
     docker:
-      - image: amazon/aws-cli
+      - image: python:3.7-alpine3.11
     steps:
       - checkout
+      - add_ssh_keys:
+          fingerprints: 
+            - "6c:9c:f6:6d:1f:ff:79:ea:2a:90:7a:58:0a:09:db:f1"
+
+      - run: apk update && apk add openssh
+      - run: ssh-keyscan 52.90.15.109 >> ~/.ssh/known_hosts
+
       - run:
-          name: Ensure backend infrastructure exist
+          name: Install dependencies
           command: |
-            aws cloudformation create-stack \
-              --template-body file://template.yml \
-              --stack-name udacity-cicd-stack
+            apk add --update ansible
+      - run:
+          name: Configure server
+          command: |
+            ansible-playbook -i inventory.txt playbook.yml
 
 workflows:
-  cicd_workflow:
+  my_workflow:
     jobs:
-      - create_infrastructure
+      - configure_infrastructure
